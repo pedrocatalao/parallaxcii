@@ -88,7 +88,7 @@ def draw_parallax(stdscr):
     curses.init_pair(5, 70, curses.COLOR_BLACK)
     curses.init_pair(6, 94, curses.COLOR_BLACK)
     curses.init_pair(7, curses.COLOR_YELLOW, curses.COLOR_BLACK)
-    curses.init_pair(8, 205, curses.COLOR_BLACK)
+    curses.init_pair(8, 209, curses.COLOR_BLACK)
     curses.curs_set(0)
     stdscr.nodelay(True)
     stdscr.timeout(50)
@@ -159,7 +159,7 @@ def draw_parallax(stdscr):
         if stdscr.getch() == ord('q'):
             break
 
-        time.sleep(0.05)
+        time.sleep(0.001)
 
 
 def main():
