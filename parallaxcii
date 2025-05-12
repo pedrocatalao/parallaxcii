@@ -172,7 +172,7 @@ def draw_parallax(stdscr):
             for col in range(inner_width):
                 ch, color = composed_lines[row][col]
                 try:
-                    stdscr.addch(inner_top + row, inner_left + col, ch, curses.color_pair(color)  | curses.A_BOLD)
+                    stdscr.addch(inner_top + row, inner_left + col, ch, curses.color_pair(color) | curses.A_BOLD)
                 except curses.error:
                     pass
 
@@ -183,7 +183,7 @@ def draw_parallax(stdscr):
 
         if pulse['cooldown'] > 0:
             pulse['cooldown'] -= 1
-        if pulse['cooldown'] == 0:
+        else:
             pulse['active'] = False
 
         time.sleep(0.001)
