@@ -2,6 +2,9 @@
 
 import curses
 import time
+import threading
+import sounddevice as sd
+import numpy as np
 
 LAYER_SKY = """
                  *            *       .                    *            *       .                    *            *       .   
@@ -19,10 +22,10 @@ LAYER_SKY = """
 LAYER_CLOUDS = """
   ⣠⣾███████████⣷⣄                       ⣠⣾███████████⣷⣄                                                       
  ⣼███████████████████⣧                 ⣼███████████████▒▒▒▒▒⣧                       ⣠⣾███████████████⣷⣄        
-⣸███████████████████████⣿⡄            ⣸███████▒▒▒▒▒▒▒▒████████⣿⡄                 ⣸█▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████⣿⡄⠀⠀  
-⣿██████████▓▓▓▓▓███████████⣿          ⣿██████████▓▓▓▓▓███████████⣿               ⣿██████████▓▓▓▓▓███████████⣿⠀  
+⣸███████████████████████⣿⡄            ⣸███████▒▒▒▒▒▒▒▒████████⣿⡄                 ⣸█▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████⣿⡄    
+⣿██████████▓▓▓▓▓███████████⣿          ⣿██████████▓▓▓▓▓███████████⣿               ⣿██████████▓▓▓▓▓███████████⣿   
 ⠉⠛█████▓▓▒▒▒▒▒▓▓███████████⠁          ⠉⠛█████▓▓▒▒▒▒▒▓▓███████████⠁               ⠉⠛█████▓▓▒▒▒▒▒▓▓███████████⠁   
-   ⠉⠙⠛▒▒░░▒▒▓▓▓▓██⠟                     ⠉⠙⠛▒▒▒▒▒▓▓▓▓██⠟                            ⠉⠙⠛▒▒░░▒▒▓▓▓▓██⠟⠀⠀⠀         
+   ⠉⠙⠛▒▒░░▒▒▓▓▓▓██⠟                     ⠉⠙⠛▒▒▒▒▒▓▓▓▓██⠟                            ⠉⠙⠛▒▒░░▒▒▓▓▓▓██⠟            
          ⠉⠉                  
 """
 
@@ -68,13 +71,13 @@ LAYER_LOGO = """
    """
 
 LAYERS = [
-    {"data": LAYER_SKY, "speed": 0.05, "y_offset": 0},
-    {"data": LAYER_CLOUDS, "speed": 0.6, "y_offset": 1},
-    {"data": LAYER_MOUNTAINS, "speed": 0.9, "y_offset": 2},
-    {"data": LAYER_PALM_LEAFS, "speed": 1.9, "y_offset": 1},
-    {"data": LAYER_TRUNKS, "speed": 1.9, "y_offset": 5},
-    {"data": LAYER_ROAD, "speed": 1.9, "y_offset": 8},
-    {"data": LAYER_LOGO, "speed": 0.0, "y_offset": 6},
+    {"data": LAYER_SKY, "speed": 0.05, "y_offset": 0, "color": (2, 10)},
+    {"data": LAYER_CLOUDS, "speed": 0.6, "y_offset": 1, "color": (3, 11)},
+    {"data": LAYER_MOUNTAINS, "speed": 0.9, "y_offset": 2, "color": (4, 4)},
+    {"data": LAYER_PALM_LEAFS, "speed": 1.9, "y_offset": 1, "color": (5, 5)},
+    {"data": LAYER_TRUNKS, "speed": 1.9, "y_offset": 5, "color": (6, 6)},
+    {"data": LAYER_ROAD, "speed": 1.9, "y_offset": 8, "color": (7, 7)},
+    {"data": LAYER_LOGO, "speed": 0.0, "y_offset": 6, "color": (8, 12)},
 ]
 
 
@@ -82,18 +85,35 @@ def draw_parallax(stdscr):
     curses.start_color()
     curses.use_default_colors()
     curses.init_pair(1, curses.COLOR_WHITE, -1)
-    curses.init_pair(2, curses.COLOR_WHITE, 25)
-    curses.init_pair(3, 81, 25)
+    curses.init_pair(2, curses.COLOR_WHITE, 19)
+    curses.init_pair(3, 81, 19)
     curses.init_pair(4, curses.COLOR_YELLOW, -1)
     curses.init_pair(5, 70, -1)
     curses.init_pair(6, 94, -1)
     curses.init_pair(7, curses.COLOR_YELLOW, -1)
     curses.init_pair(8, 235, -1)
+    curses.init_pair(10, curses.COLOR_WHITE, 25)
+    curses.init_pair(11, 81, 25)
+    curses.init_pair(12, 237, -1)
     curses.curs_set(0)
     stdscr.nodelay(True)
     stdscr.timeout(50)
 
     offsets = [0.0 for _ in LAYERS]
+    pulse = {'active': False, 'cooldown': 0}
+
+    # Audio beat detection thread
+    def audio_listener():
+        def callback(indata, frames, time, status):
+            volume = np.linalg.norm(indata) * 10
+            if volume > 3.9 and pulse['cooldown'] <= 0:
+                pulse['active'] = True
+                pulse['cooldown'] = 4  # cooldown in frames
+        with sd.InputStream(callback=callback, channels=1, samplerate=44100):
+            while True:
+                time.sleep(0.05)
+
+    threading.Thread(target=audio_listener, daemon=True).start()
 
     while True:
         stdscr.erase()
@@ -136,7 +156,9 @@ def draw_parallax(stdscr):
                     for col in range(min(inner_width, len(padded_line))):
                         char = padded_line[col]
                         if char != ' ':
-                            composed_lines[global_row][col] = (char, i + 2)
+                            color_pair = layer.get("color", (1, 1))
+                            color_index = color_pair[1] if pulse['active'] else color_pair[0]
+                            composed_lines[global_row][col] = (char, color_index)
 
         # Fill inner background with spaces
         for row in range(inner_height):
@@ -158,6 +180,11 @@ def draw_parallax(stdscr):
 
         if stdscr.getch() == ord('q'):
             break
+
+        if pulse['cooldown'] > 0:
+            pulse['cooldown'] -= 1
+        if pulse['cooldown'] == 0:
+            pulse['active'] = False
 
         time.sleep(0.001)
 
