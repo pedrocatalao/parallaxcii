@@ -1,0 +1,169 @@
+#!/usr/bin/env python3
+
+import curses
+import time
+
+LAYER_SKY = """
+                 *            *       .                    *            *       .                    *            *       .   
+      .       .       *       .          *       .       .       *       .          *       .       .       *       .          * 
+                .         *      .    *                   .         *      .    *                   .         *      .    *   
+    *       .      *  .       *      .        *       .      *  .       *      .        *       .      *  .       *      .    
+                *        .     .     *                    *        .     .     *                    *        .     .     *    
+  .    *   .       .        *      .    *   .    *   .       .        *      .    *   .    *   .       .        *      .    * 
+        .        *     .       *       .          .        *     .       *       .          .        *     .       *       .  
+               *     .    * .    .     *                 *     .    * .    .     *                 *     .    * .    .     *  
+ *      .       .       *       .     .    *      .       .       *       .     .    *      .       .       *       .     .   
+.                                         .                                         .                                         
+"""
+
+LAYER_CLOUDS = """
+                                      ⠀⠀  ⠀⠀⢀⣀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀                           ⠀⠀⠀⠀                           
+⠀⠀⣠⣾███████████⣷⣄⠀⠀⠀⠀⠀               ⠀⠀ ⣠⣾███████████⣷⣄⠀⠀⠀⠀⠀                     ⠀                               
+⠀⣼███████████████████⣧⠀⠀⠀⠀            ⠀⣼███████████████▒▒▒▒▒⣧⠀⠀⠀⠀                 ⠀ ⣠⣾███████████████⣷⣄⠀⠀⠀⠀    
+⣸███████████████████████⣿⡄⠀⠀          ⣸███████▒▒▒▒▒▒▒▒████████⣿⡄⠀⠀               ⣸█▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒████⣿⡄⠀⠀  
+⣿██████████▓▓▓▓▓███████████⣿⠀         ⣿██████████▓▓▓▓▓███████████⣿⠀              ⣿██████████▓▓▓▓▓███████████⣿⠀  
+⠉⠛█████▓▓▒▒▒▒▒▓▓███████████⠁          ⠉⠛█████▓▓▒▒▒▒▒▓▓███████████⠁               ⠉⠛█████▓▓▒▒▒▒▒▓▓███████████⠁   
+⠀⠀⠀⠉⠙⠛▒▒░░▒▒▓▓▓▓██⠟⠀⠀⠀               ⠀⠀⠀⠉⠙⠛▒▒▒▒▒▓▓▓▓██⠟⠀⠀⠀                     ⠀⠀⠀⠉⠙⠛▒▒░░▒▒▓▓▓▓██⠟⠀⠀⠀          
+⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠀⠀⠀⠀⠀             
+"""
+
+LAYER_MOUNTAINS = """
+                                                                       ▓▓▓▓                                                              
+            ▓▓▓                                                       ▓▓▒▒▓▓                                                             
+          ▓▓▒░▒▓▓                                  ▓                 ▓▓▒░░▒▓▓                 ▓▓▓▓▒▓▓                                    
+        ▓▓▒░░░░░▒▓▓                 ▓▓▒▓▒▓▓      ▓▓░▒▓▓               ▓▓▒░░▒▓▓               ▓▓▒░░░░▒▓▓                                  
+      ▓▓▒░░░░░░░░░▒▓▓           ▓▓▒░░░░░░▒▓▓    ▓▓▒░░▒▓▓           ▓▓▒░░░░░░▒▓▓             ▓▓▒░░░░░░▒▓▓                                 
+     ▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓      ▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓       ▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▓▓       ▓▓▒▒▒▓▒▒▒▒▓▓       
+    ▓▓████████████▓▓▓▓██████████████████▓▓▓▓██████████████████▓▓▓▓████████████▓▓▓▓████████████▓▓▓▓████████████▓▓▓▓█████▓▓▓▓████████████▓▓
+"""
+
+LAYER_PALM_LEAFS = """
+   ▓▓▓       ▓▓▓▓     ▓▓▓                 ▓▓▓▓     ▓▓▓       ▓▓▓                    ▓▓▓       ▓▓▓▓                                  ▓▓▓       ▓▓▓      ▓▓▓     ▓▓▓  
+ ▓████▓     ▓████▓   ▓████▓             ▓████▓   ▓████▓   ▓████▓                  ▓████▓     ▓████▓                               ▓████▓   ▓████▓  ▓████▓   ▓████▓  
+▓██████▓   ▓██████▓ ▓██████▓           ▓██████▓  ▓██████▓ ▓██████▓               █▓ ▓██████▓██████▓                               ▓██████▓ ▓██████▓ ▓██████▓▓██████▓
+   ▓▓▓         ▓▓▓       ▓▓▓                 ▓▓▓       ▓▓▓       ▓                  ▓▓▓         ▓▓▓                                     ▓▓▓       ▓▓▓      ▓▓▓      
+   """
+
+LAYER_TRUNKS = """
+   █            █         █                  █          █        █                   █          █                                        █         █        █       
+    █           █          █                █           █         █                  █           █                                        █       █        █        
+     █          █           █               █           █          █                █            █                                         █     █        █         
+      █         █            █             █            █           █              █            █                                           █    █        █         
+   """
+
+LAYER_ROAD = """
+██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+   """
+
+
+LAYER_LOGO = """
+           ██████   █████  ██████   █████  ██       █████  ███████  ██████ ██ ██             
+           ██   ██ ██   ██ ██   ██ ██   ██ ██      ██   ██ ██      ██      ██ ██             
+           ██████  ███████ ██████  ███████ ██      ███████ ███████ ██      ██ ██             
+           ██      ██   ██ ██   ██ ██   ██ ██      ██   ██      ██ ██      ██ ██             
+           ██      ██   ██ ██   ██ ██   ██ ███████ ██   ██ ███████  ██████ ██ ██             
+   """
+
+LAYERS = [
+    {"data": LAYER_SKY, "speed": 0.0, "y_offset": 0},
+    {"data": LAYER_CLOUDS, "speed": 0.6, "y_offset": 0},
+    {"data": LAYER_MOUNTAINS, "speed": 0.9, "y_offset": 2},
+    {"data": LAYER_PALM_LEAFS, "speed": 1.9, "y_offset": 0},
+    {"data": LAYER_TRUNKS, "speed": 1.9, "y_offset": 4},
+    {"data": LAYER_ROAD, "speed": 1.9, "y_offset": 8},
+    {"data": LAYER_LOGO, "speed": 0.0, "y_offset": 4},
+]
+
+
+def draw_parallax(stdscr):
+    curses.start_color()
+    curses.use_default_colors()
+    curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK)
+    curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_BLACK)
+    curses.init_pair(3, curses.COLOR_BLUE, curses.COLOR_BLACK)
+    curses.init_pair(4, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(5, curses.COLOR_GREEN, curses.COLOR_BLACK)
+    curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_BLACK)
+    curses.init_pair(7, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+    curses.init_pair(8, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+    curses.curs_set(0)
+    stdscr.nodelay(True)
+    stdscr.timeout(50)
+
+    offsets = [0.0 for _ in LAYERS]
+
+    while True:
+        stdscr.erase()
+
+        max_y, max_x = stdscr.getmaxyx()
+
+        if max_y < 10 or max_x < 20:
+            stdscr.addstr(0, 0, "Terminal too small")
+            stdscr.refresh()
+            time.sleep(0.1)
+            continue
+
+        frame_height = max_y // 2
+        frame_width = max_x // 2
+        top = (max_y - frame_height) // 2
+        left = (max_x - frame_width) // 2
+
+
+        inner_height = frame_height - 2
+        inner_width = frame_width - 2
+        inner_top = top + 1
+        inner_left = left + 1
+
+        # Initialize blank composed lines
+        composed_lines = [[(' ', 1) for _ in range(inner_width)] for _ in range(inner_height)]
+
+        for i, layer in enumerate(LAYERS):
+            lines = layer["data"].strip('\n').split('\n')
+            speed = layer["speed"]
+            y_offset = layer.get("y_offset", 0)
+            max_line_len = max(len(line) for line in lines) if lines else 1
+            if speed > 0.0:
+                offsets[i] = (offsets[i] + speed) % max_line_len
+            start = int(offsets[i])
+
+            for local_row, line in enumerate(lines):
+                global_row = local_row + y_offset
+                if 0 <= global_row < inner_height:
+                    padded_line = (line + line)[start:start + inner_width]
+                    for col in range(min(inner_width, len(padded_line))):
+                        char = padded_line[col]
+                        if char != ' ':
+                            composed_lines[global_row][col] = (char, i + 2)
+
+        # Fill inner background with spaces
+        for row in range(inner_height):
+            try:
+                stdscr.addstr(inner_top + row, inner_left, ' ' * inner_width, curses.color_pair(1))
+            except curses.error:
+                pass
+
+        # Draw composed lines
+        for row in range(inner_height):
+            for col in range(inner_width):
+                ch, color = composed_lines[row][col]
+                try:
+                    stdscr.addch(inner_top + row, inner_left + col, ch, curses.color_pair(color)  | curses.A_BOLD)
+                except curses.error:
+                    pass
+
+        stdscr.refresh()
+
+        if stdscr.getch() == ord('q'):
+            break
+
+        time.sleep(0.05)
+
+
+def main():
+    curses.wrapper(draw_parallax)
+
+
+if __name__ == "__main__":
+    main()
